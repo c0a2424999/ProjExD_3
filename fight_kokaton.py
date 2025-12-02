@@ -146,7 +146,6 @@ class Score:
     スコアに関するクラス
     """
     def __init__(self, score: int =0):
-        
         self.fonto = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30)
         self.color = (0, 0, 255)
         self.score = score
@@ -175,6 +174,7 @@ def main():
     #     bombs.append(bomb)
     bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)]  # 内包表記
     beam = None  # ゲーム初期化時にはビームは存在しない
+    multibeam = []
     clock = pg.time.Clock()
     tmr = 0
     while True:
@@ -183,7 +183,8 @@ def main():
                 return
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:  # スペースキーが押されたら
                 # スペースキー押下でBeamクラスのインスタンス生成
-                beam = Beam(bird)            
+                beam = Beam(bird)
+                multibeam.append(beam)          
         screen.blit(bg_img, [0, 0])
         
         for b, bomb in enumerate(bombs):
@@ -197,20 +198,23 @@ def main():
                 time.sleep(1)
                 return
         for b, bomb in enumerate(bombs):
-            if beam is not None:
-                if beam.rct.colliderect(bomb.rct):
-                    # ビームが爆弾に当たったら、爆弾とビームを消す
-                    beam = None
-                    bombs[b] = None
-                    bird.change_img(6, screen)
-                    score.add(1)
-                    pg.display.update()
-                    bombs = [bomb for bomb in bombs if bomb is not None]  # Noneを除去
+            for beam in multibeam:
+                if beam is not None:
+                    if beam.rct.colliderect(bomb.rct):
+                        # ビームが爆弾に当たったら、爆弾とビームを消す
+                        multibeam.remove(beam)
+                        bombs[b] = None
+                        bird.change_img(6, screen)
+                        score.add(1)
+                        pg.display.update()
+                        bombs = [bomb for bomb in bombs if bomb is not None]  # Noneを除去
 
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
-        if beam is not None:  # ビームが存在していたら
+        for beam in multibeam[:]:  # ビームが存在していたら
             beam.update(screen)
+            if not check_bound(beam.rct)[0]:
+                multibeam.remove(beam)  # 画面外に出たビームを削除
         for bomb in bombs:  # 爆弾が存在していたら
             bomb.update(screen)
         score.update(screen)
