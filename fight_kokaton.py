@@ -161,12 +161,33 @@ class Score:
         screen.blit(score_img, self.center)
 
 
+class Explosion:
+    """
+    爆発エフェクトに関するクラス
+    """
+    def __init__(self, xy):
+        img = pg.image.load(f"fig/explosion.gif")
+        self.imgs = [img, pg.transform.flip(img, True, True)]
+        self.rct = self.imgs[0].get_rect()
+        self.rct = img.get_rect(center=xy)
+        self.life = 20
+        self.num = 0
+
+    def update(self, screen: pg.Surface):
+        if self.life > 0:
+            screen.blit(self.imgs[self.num % 2], self.rct)
+            self.life -= 1
+            self.num += 1
+        return self.life > 0
+
+        
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
     bg_img = pg.image.load("fig/pg_bg.jpg")
     bird = Bird((300, 200))
     score = Score()
+    explosions = []
     # bomb = Bomb((255, 0, 0), 10)
     # bombs = []
     # for _ in range(NUM_OF_BOMBS):
@@ -206,6 +227,7 @@ def main():
                         bombs[b] = None
                         bird.change_img(6, screen)
                         score.add(1)
+                        explosions.append(Explosion(bomb.rct.center))
                         pg.display.update()
                         bombs = [bomb for bomb in bombs if bomb is not None]  # Noneを除去
 
@@ -217,7 +239,12 @@ def main():
                 multibeam.remove(beam)  # 画面外に出たビームを削除
         for bomb in bombs:  # 爆弾が存在していたら
             bomb.update(screen)
-        score.update(screen)
+            new_explosions = []
+            for e in explosions:
+                if e.update(screen):
+                    new_explosions.append(e)
+            explosions = new_explosions
+            score.update(screen)
 
         pg.display.update()
         tmr += 1
